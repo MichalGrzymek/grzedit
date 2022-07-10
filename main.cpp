@@ -10,7 +10,7 @@
 std::vector<std::string> lines;
 std::string filename;
 
-void handle_cmd_args(int argc, char *argv[]){
+void handle_cmd_args(int argc, char *argv[]) {
   if (argc == 2) {
     filename = argv[1];
 
@@ -32,12 +32,12 @@ int main(int argc, char *argv[]) {
 
   Terminal terminal;
 
-  //position of cursor in file
+  // position of cursor in file
   int file_y = 0;
   int file_x = 0;
   while (1) {
     {
-      //offset in file at which the left upper corner of the terminal is
+      // offset in file at which the left upper corner of the terminal is
       int y_offset = file_y - terminal.cursor_y(),
           x_offset = file_x - terminal.cursor_x();
       if (y_offset < 0 || x_offset < 0)
@@ -60,8 +60,8 @@ int main(int argc, char *argv[]) {
       if (x < 0)
         throw std::runtime_error("x too small");
       int delta_x = x - file_x;
-      terminal.move_cursor_x(std::clamp(terminal.cursor_x() + delta_x, 0,
-                                        terminal.max_x() - 1));
+      terminal.move_cursor_x(
+          std::clamp(terminal.cursor_x() + delta_x, 0, terminal.max_x() - 1));
       file_x = x;
     };
 
@@ -71,8 +71,8 @@ int main(int argc, char *argv[]) {
       if (y < 0)
         throw std::runtime_error("y too small");
       int delta_y = y - file_y;
-      terminal.move_cursor_y(std::clamp(terminal.cursor_y() + delta_y, 0,
-                                        terminal.max_y() - 1));
+      terminal.move_cursor_y(
+          std::clamp(terminal.cursor_y() + delta_y, 0, terminal.max_y() - 1));
       file_y = y;
 
       if (lines[file_y].size() < file_x)

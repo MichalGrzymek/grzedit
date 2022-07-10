@@ -1,15 +1,15 @@
 #include "terminal.hpp"
 
 #include <ncurses.h>
-#include <stdexcept>
 #include <signal.h>
+#include <stdexcept>
 
 /* ncurses doesn't handle sigsegv,
 because of noecho this messes up the terminal*/
-void sigsegv_handler(int signo){
-        (void)signo;
-        endwin();
-        signal(SIGSEGV, nullptr); // avoids infinite loop
+void sigsegv_handler(int signo) {
+  (void)signo;
+  endwin();
+  signal(SIGSEGV, nullptr); // avoids infinite loop
 }
 
 void Terminal::move_cursor(int y, int x) { wmove(text_window, y, x); }
