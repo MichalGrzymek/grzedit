@@ -1,4 +1,5 @@
 #include "terminal.hpp"
+#include "cursor.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -31,15 +32,13 @@ int main(int argc, char *argv[]) {
   handle_cmd_args(argc, argv);
 
   Terminal terminal;
+  Cursor cursor(0,0,terminal,lines);;
 
-  // position of cursor in file
-  int file_y = 0;
-  int file_x = 0;
   while (1) {
     {
       // offset in file at which the left upper corner of the terminal is
-      int y_offset = file_y - terminal.cursor_y(),
-          x_offset = file_x - terminal.cursor_x();
+      int y_offset = cursor.y - terminal.cursor_y(),
+          x_offset = cursor.x - terminal.cursor_x();
       if (y_offset < 0 || x_offset < 0)
         throw std::logic_error(
             "negative offset y_offset=" + std::to_string(y_offset) +
@@ -54,86 +53,36 @@ int main(int argc, char *argv[]) {
 
     int c = terminal.get_char();
 
-    auto move_file_x = [&](int x) {
-      if (lines[file_y].size() < x)
-        throw std::logic_error("x too big");
-      if (x < 0)
-        throw std::logic_error("x too small");
-      int delta_x = x - file_x;
-      terminal.move_cursor_x(
-          std::clamp(terminal.cursor_x() + delta_x, 0, terminal.max_x() - 1));
-      file_x = x;
-    };
-
-    auto move_file_y = [&](int y) {
-      if (y >= lines.size())
-        throw std::logic_error("y too big");
-      if (y < 0)
-        throw std::logic_error("y too small");
-      int delta_y = y - file_y;
-      terminal.move_cursor_y(
-          std::clamp(terminal.cursor_y() + delta_y, 0, terminal.max_y() - 1));
-      file_y = y;
-
-      if (lines[file_y].size() < file_x)
-        throw std::logic_error("x too big for new line");
-    };
-
-    auto cursor_left = [&]() {
-      if (file_x > 0) {
-        move_file_x(file_x - 1);
-      }
-    };
-    auto cursor_right = [&]() {
-      if (file_x < lines[file_y].size()) { // no -1, get after last char
-        move_file_x(file_x + 1);
-      }
-    };
-    auto cursor_up = [&]() {
-      if (file_y > 0) {
-        move_file_x(std::min(file_x, (int)lines[file_y - 1].size()));
-        move_file_y(file_y - 1);
-      }
-    };
-    auto cursor_down = [&]() {
-      if (file_y < lines.size() - 1) {
-        move_file_x(std::min(file_x, (int)lines[file_y + 1].size()));
-        move_file_y(file_y + 1);
-      }
-    };
-    auto cursor_maxright = [&]() { move_file_x(lines[file_y].size()); };
-    auto cursor_maxleft = [&]() { move_file_x(0); };
-
     switch (c) {
     case KEY_BACKSPACE:
-      if (file_x > 0) {
-        lines[file_y].erase(file_x - 1, 1);
-        cursor_left();
-      } else if (file_y != 0) {
-        cursor_up(); // changes file_y!
-        cursor_maxright();
-        lines[file_y] += lines[file_y + 1];
-        lines.erase(lines.begin() + file_y + 1);
+      if (cursor.x > 0) {
+        lines[cursor.y].erase(cursor.x - 1, 1);
+        cursor.move_left();
+      } else if (cursor.y != 0) {
+        cursor.move_up(); // changes cursor.y!
+        cursor.move_maxright();
+        lines[cursor.y] += lines[cursor.y + 1];
+        lines.erase(lines.begin() + cursor.y + 1);
       }
       break;
     case KEY_UP:
-      cursor_up();
+      cursor.move_up();
       break;
     case KEY_DOWN:
-      cursor_down();
+      cursor.move_down();
       break;
     case KEY_LEFT:
-      cursor_left();
+      cursor.move_left();
       break;
     case KEY_RIGHT:
-      cursor_right();
+      cursor.move_right();
       break;
     case '\n': {
-      std::string new_line(lines[file_y].begin() + file_x, lines[file_y].end());
-      lines[file_y].erase(lines[file_y].begin() + file_x, lines[file_y].end());
-      lines.insert(lines.begin() + file_y + 1, new_line);
-      cursor_maxleft();
-      cursor_down();
+      std::string new_line(lines[cursor.y].begin() + cursor.x, lines[cursor.y].end());
+      lines[cursor.y].erase(lines[cursor.y].begin() + cursor.x, lines[cursor.y].end());
+      lines.insert(lines.begin() + cursor.y + 1, new_line);
+      cursor.move_maxleft();
+      cursor.move_down();
     } break;
     case ctrl_plus('o'): {
       std::ofstream file(filename);
@@ -147,20 +96,20 @@ int main(int argc, char *argv[]) {
       return 0;
       break;
     case ctrl_plus('a'):
-      cursor_maxleft();
+      cursor.move_maxleft();
       break;
     case ctrl_plus('e'):
-      cursor_maxright();
+      cursor.move_maxright();
       break;
     case ctrl_plus('p'):
-      cursor_up();
+      cursor.move_up();
       break;
     case ctrl_plus('n'):
-      cursor_down();
+      cursor.move_down();
       break;
     default:
-      lines[file_y].insert(lines[file_y].begin() + file_x, (char)c);
-      cursor_right();
+      lines[cursor.y].insert(lines[cursor.y].begin() + cursor.x, (char)c);
+      cursor.move_right();
     }
   }
 }
