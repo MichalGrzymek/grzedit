@@ -15,14 +15,14 @@ void handle_cmd_args(int argc, char *argv[]) {
     filename = argv[1];
 
     std::ifstream file(filename);
-    if (!file.is_open())
-      throw std::runtime_error("couldn't open file for reading!");
-    std::string line;
+    if (file.is_open()) {
+      std::string line;
 
-    while (std::getline(file, line))
-      lines.push_back(line);
+      while (std::getline(file, line))
+        lines.push_back(line);
+    }else lines = {""};
   } else {
-    std::cerr << "you must pass a filename to edit" << std::endl;
+    std::cerr << "use: ./grzed filename" << std::endl;
     exit(1);
   }
 }
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
       int y_offset = file_y - terminal.cursor_y(),
           x_offset = file_x - terminal.cursor_x();
       if (y_offset < 0 || x_offset < 0)
-        throw std::runtime_error(
+        throw std::logic_error(
             "negative offset y_offset=" + std::to_string(y_offset) +
             " x_offset=" + std::to_string(x_offset));
       std::vector<std::string> temp;
@@ -56,9 +56,9 @@ int main(int argc, char *argv[]) {
 
     auto move_file_x = [&](int x) {
       if (lines[file_y].size() < x)
-        throw std::runtime_error("x too big");
+        throw std::logic_error("x too big");
       if (x < 0)
-        throw std::runtime_error("x too small");
+        throw std::logic_error("x too small");
       int delta_x = x - file_x;
       terminal.move_cursor_x(
           std::clamp(terminal.cursor_x() + delta_x, 0, terminal.max_x() - 1));
@@ -67,16 +67,16 @@ int main(int argc, char *argv[]) {
 
     auto move_file_y = [&](int y) {
       if (y >= lines.size())
-        throw std::runtime_error("y too big");
+        throw std::logic_error("y too big");
       if (y < 0)
-        throw std::runtime_error("y too small");
+        throw std::logic_error("y too small");
       int delta_y = y - file_y;
       terminal.move_cursor_y(
           std::clamp(terminal.cursor_y() + delta_y, 0, terminal.max_y() - 1));
       file_y = y;
 
       if (lines[file_y].size() < file_x)
-        throw std::runtime_error("x too big for new line");
+        throw std::logic_error("x too big for new line");
     };
 
     auto cursor_left = [&]() {
