@@ -2,15 +2,9 @@
 
 #include <stdexcept>
 
-Cursor::Cursor(int _y, int _x, Terminal &_terminal, std::vector<std::string> &_lines)
-  :
-  terminal(_terminal),
-  lines(_lines),
-  y(_y),
-  x(_x)
-{
-  
-}
+Cursor::Cursor(int _y, int _x, Terminal &_terminal,
+               std::vector<std::string> &_lines)
+    : terminal(_terminal), lines(_lines), y(_y), x(_x) {}
 
 void Cursor::set_x(int new_x) {
   if (lines[y].size() < new_x)

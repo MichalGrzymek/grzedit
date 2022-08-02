@@ -1,5 +1,5 @@
-#include "terminal.hpp"
 #include "cursor.hpp"
+#include "terminal.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -21,7 +21,8 @@ void handle_cmd_args(int argc, char *argv[]) {
 
       while (std::getline(file, line))
         lines.push_back(line);
-    }else lines = {""};
+    } else
+      lines = {""};
   } else {
     std::cerr << "use: ./grzed filename" << std::endl;
     exit(1);
@@ -32,7 +33,7 @@ int main(int argc, char *argv[]) {
   handle_cmd_args(argc, argv);
 
   Terminal terminal;
-  Cursor cursor(0,0,terminal,lines);;
+  Cursor cursor(0, 0, terminal, lines);
 
   while (1) {
     {
@@ -59,7 +60,7 @@ int main(int argc, char *argv[]) {
         lines[cursor.y].erase(cursor.x - 1, 1);
         cursor.move_left();
       } else if (cursor.y != 0) {
-        cursor.move_up(); // changes cursor.y!
+        cursor.move_up();
         cursor.move_maxright();
         lines[cursor.y] += lines[cursor.y + 1];
         lines.erase(lines.begin() + cursor.y + 1);
@@ -78,8 +79,10 @@ int main(int argc, char *argv[]) {
       cursor.move_right();
       break;
     case '\n': {
-      std::string new_line(lines[cursor.y].begin() + cursor.x, lines[cursor.y].end());
-      lines[cursor.y].erase(lines[cursor.y].begin() + cursor.x, lines[cursor.y].end());
+      std::string new_line(lines[cursor.y].begin() + cursor.x,
+                           lines[cursor.y].end());
+      lines[cursor.y].erase(lines[cursor.y].begin() + cursor.x,
+                            lines[cursor.y].end());
       lines.insert(lines.begin() + cursor.y + 1, new_line);
       cursor.move_maxleft();
       cursor.move_down();
