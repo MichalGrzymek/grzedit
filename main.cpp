@@ -38,23 +38,23 @@ int main(int argc, char *argv[]) {
     {
       // offset in file at which the left upper corner of the terminal is
       const int y_offset = cursor.get_y() - terminal.cursor_y(),
-          x_offset = cursor.get_x() - terminal.cursor_x();
+                x_offset = cursor.get_x() - terminal.cursor_x();
       if (y_offset < 0 || x_offset < 0)
         throw std::logic_error(
             "negative offset y_offset=" + std::to_string(y_offset) +
             " x_offset=" + std::to_string(x_offset));
-      terminal.display([&](int y, int x)->Terminal::Field{
-        char c=' ';
-        Style s=Style::normal;
-        //change from terminal coordinates to file coordinates
-        y+=y_offset;
-        x+=x_offset;
-        if(y<lines.size() && x<lines[y].size()){
-          c=lines[y][x];
-          int max_file_x_in_window = x_offset + terminal.max_x() -1;
-          if(x == max_file_x_in_window && x+1 < lines[y].size()){
-            s=Style::inline_info;
-            c='>';
+      terminal.display([&](int y, int x) -> Terminal::Field {
+        char c = ' ';
+        Style s = Style::normal;
+        // change from terminal coordinates to file coordinates
+        y += y_offset;
+        x += x_offset;
+        if (y < lines.size() && x < lines[y].size()) {
+          c = lines[y][x];
+          int max_file_x_in_window = x_offset + terminal.max_x() - 1;
+          if (x == max_file_x_in_window && x + 1 < lines[y].size()) {
+            s = Style::inline_info;
+            c = '>';
           }
         }
         return {c, s};
@@ -90,8 +90,9 @@ int main(int argc, char *argv[]) {
     case '\n': {
       std::string new_line(lines[cursor.get_y()].begin() + cursor.get_x(),
                            lines[cursor.get_y()].end());
-      lines[cursor.get_y()].erase(lines[cursor.get_y()].begin() + cursor.get_x(),
-                            lines[cursor.get_y()].end());
+      lines[cursor.get_y()].erase(lines[cursor.get_y()].begin() +
+                                      cursor.get_x(),
+                                  lines[cursor.get_y()].end());
       lines.insert(lines.begin() + cursor.get_y() + 1, new_line);
       cursor.move_maxleft();
       cursor.move_down();
@@ -120,7 +121,8 @@ int main(int argc, char *argv[]) {
       cursor.move_down();
       break;
     default:
-      lines[cursor.get_y()].insert(lines[cursor.get_y()].begin() + cursor.get_x(), (char)c);
+      lines[cursor.get_y()].insert(
+          lines[cursor.get_y()].begin() + cursor.get_x(), (char)c);
       cursor.move_right();
     }
   }

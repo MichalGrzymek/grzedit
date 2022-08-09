@@ -20,9 +20,9 @@ void Terminal::move_cursor_x(int x) { move_cursor(cursor_y(), x); }
 void Terminal::move_cursor_y(int y) { move_cursor(y, cursor_x()); }
 
 void Terminal::write(int y, int x, char c, Style s) {
-    wattron(text_window, COLOR_PAIR(to_int(s)));
-    mvwaddch(text_window, y, x, c);
-    wattroff(text_window, COLOR_PAIR(to_int(s)));
+  wattron(text_window, COLOR_PAIR(to_int(s)));
+  mvwaddch(text_window, y, x, c);
+  wattroff(text_window, COLOR_PAIR(to_int(s)));
 }
 
 std::pair<int, int> Terminal::cursor_yx() {
@@ -59,16 +59,16 @@ int Terminal::max_x() {
 
 int Terminal::get_char() { return wgetch(text_window); }
 
-void Terminal::display(const std::function<Field(int,int)> &text) {
-  auto[cursor_y,cursor_x]=cursor_yx();
-  auto[max_y,max_x]=max_yx();
+void Terminal::display(const std::function<Field(int, int)> &text) {
+  auto [cursor_y, cursor_x] = cursor_yx();
+  auto [max_y, max_x] = max_yx();
 
   wclear(text_window);
 
   for (int i = 0; i < max_y; ++i)
-    for (int j = 0; j < max_x; ++j){
-      Field field = text(i,j);
-      write(i,j, field.character, field.style);
+    for (int j = 0; j < max_x; ++j) {
+      Field field = text(i, j);
+      write(i, j, field.character, field.style);
     }
 
   wmove(text_window, cursor_y, cursor_x);

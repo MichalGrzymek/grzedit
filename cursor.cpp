@@ -31,13 +31,9 @@ void Cursor::set_y(int new_y) {
     throw std::logic_error("cursor x too big for new line");
 };
 
-int Cursor::get_y(){
-  return y;
-}
+int Cursor::get_y() { return y; }
 
-int Cursor::get_x(){
-  return x;
-}
+int Cursor::get_x() { return x; }
 
 void Cursor::move_left() {
   if (x > 0) {
