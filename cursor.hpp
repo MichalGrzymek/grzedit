@@ -10,12 +10,14 @@ class Cursor {
 private:
   Terminal &terminal;
   std::vector<std::string> &lines;
+  int y, x;
 
 public:
-  int y, x;
   Cursor(int _y, int _x, Terminal &_terminal, std::vector<std::string> &_lines);
   void set_x(int new_x);
   void set_y(int new_y);
+  int get_x();
+  int get_y();
 
   void move_left();
   void move_right();

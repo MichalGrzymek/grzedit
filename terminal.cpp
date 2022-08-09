@@ -1,4 +1,5 @@
 #include "terminal.hpp"
+#include "constants.hpp"
 
 #include <ncurses.h>
 #include <signal.h>
@@ -18,7 +19,11 @@ void Terminal::move_cursor_x(int x) { move_cursor(cursor_y(), x); }
 
 void Terminal::move_cursor_y(int y) { move_cursor(y, cursor_x()); }
 
-void Terminal::write(int y, int x, char c) { mvwaddch(text_window, y, x, c); }
+void Terminal::write(int y, int x, char c, Style s) {
+    wattron(text_window, COLOR_PAIR(to_int(s)));
+    mvwaddch(text_window, y, x, c);
+    wattroff(text_window, COLOR_PAIR(to_int(s)));
+}
 
 std::pair<int, int> Terminal::cursor_yx() {
   int y, x;
@@ -69,12 +74,11 @@ void Terminal::display(const std::vector<std::string> &lines) {
   for (int i = 0; i < height; ++i) {
     int width = std::min(max_x, (int)lines[i].size());
     for (int j = 0; j < width; ++j)
-      mvwaddch(text_window, i, j, lines[i][j]);
-    if ((int)lines[i].size() > max_x) {
-      wattron(text_window, COLOR_PAIR(1));
-      mvwaddch(text_window, i, max_x - 1, '>');
-      wattroff(text_window, COLOR_PAIR(1));
-    }
+      ///mvwaddch(text_window, i, j, lines[i][j]);
+      write(i,j,lines[i][j], Style::normal);
+
+    if ((int)lines[i].size() > max_x)
+      write(i, max_x-1, '>', Style::inline_info);
   }
 
   wmove(text_window, cursor_y, cursor_x);
@@ -94,7 +98,7 @@ Terminal::Terminal() {
 
   // ncurses options
   start_color();
-  init_pair(1, COLOR_WHITE, COLOR_YELLOW);
+  init_pair(to_int(Style::inline_info), COLOR_WHITE, COLOR_YELLOW);
 
   int nrows, ncolumns;
   getmaxyx(stdscr, nrows, ncolumns);

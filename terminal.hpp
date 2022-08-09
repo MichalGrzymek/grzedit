@@ -3,6 +3,7 @@
 /*
 controlling the terminal using calls to ncurses
 */
+#include "constants.hpp"
 
 #include <algorithm>
 #include <ncurses.h>
@@ -19,6 +20,7 @@ private:
   WINDOW *info_window;
   WINDOW *status_window;
   void reset_cursor();
+  void write(int y, int x, char c, Style s);
 
 public:
   Terminal();
@@ -27,7 +29,6 @@ public:
   void move_cursor(int y, int x);
   void move_cursor_x(int x);
   void move_cursor_y(int y);
-  void write(int y, int x, char c);
   void display(const std::vector<std::string> &lines);
   int get_char();
   std::pair<int, int> cursor_yx();
