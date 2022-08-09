@@ -59,27 +59,17 @@ int Terminal::max_x() {
 
 int Terminal::get_char() { return wgetch(text_window); }
 
-void Terminal::display(const std::vector<std::string> &lines) {
-  int cursor_y, cursor_x;
-  getyx(text_window, cursor_y, cursor_x);
-
-  int max_x;
-  int max_y;
-
-  getmaxyx(text_window, max_y, max_x);
+void Terminal::display(const std::function<Field(int,int)> &text) {
+  auto[cursor_y,cursor_x]=cursor_yx();
+  auto[max_y,max_x]=max_yx();
 
   wclear(text_window);
 
-  int height = std::min((int)lines.size(), max_y);
-  for (int i = 0; i < height; ++i) {
-    int width = std::min(max_x, (int)lines[i].size());
-    for (int j = 0; j < width; ++j)
-      ///mvwaddch(text_window, i, j, lines[i][j]);
-      write(i,j,lines[i][j], Style::normal);
-
-    if ((int)lines[i].size() > max_x)
-      write(i, max_x-1, '>', Style::inline_info);
-  }
+  for (int i = 0; i < max_y; ++i)
+    for (int j = 0; j < max_x; ++j){
+      Field field = text(i,j);
+      write(i,j, field.character, field.style);
+    }
 
   wmove(text_window, cursor_y, cursor_x);
   wrefresh(text_window);

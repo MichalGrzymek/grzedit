@@ -12,6 +12,7 @@ controlling the terminal using calls to ncurses
 // ncurses character code for CTRL + key x
 constexpr int ctrl_plus(int x) { return x & 0x1f; }
 
+
 class Terminal {
 private:
   constexpr static int info_rows = 2;
@@ -23,13 +24,17 @@ private:
   void write(int y, int x, char c, Style s);
 
 public:
+  struct Field{
+    char character;
+    Style style;
+  };
   Terminal();
   ~Terminal();
 
   void move_cursor(int y, int x);
   void move_cursor_x(int x);
   void move_cursor_y(int y);
-  void display(const std::vector<std::string> &lines);
+  void display(const std::function<Field(int,int)> &text);
   int get_char();
   std::pair<int, int> cursor_yx();
   int cursor_y();

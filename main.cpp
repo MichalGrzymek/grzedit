@@ -37,17 +37,28 @@ int main(int argc, char *argv[]) {
   while (true) {
     {
       // offset in file at which the left upper corner of the terminal is
-      int y_offset = cursor.get_y() - terminal.cursor_y(),
+      const int y_offset = cursor.get_y() - terminal.cursor_y(),
           x_offset = cursor.get_x() - terminal.cursor_x();
       if (y_offset < 0 || x_offset < 0)
         throw std::logic_error(
             "negative offset y_offset=" + std::to_string(y_offset) +
             " x_offset=" + std::to_string(x_offset));
-      std::vector<std::string> temp;
-      for (int i = y_offset; i < lines.size(); ++i)
-        temp.push_back(std::string(
-            min(lines[i].end(), lines[i].begin() + x_offset), lines[i].end()));
-      terminal.display(temp);
+      terminal.display([&](int y, int x)->Terminal::Field{
+        char c=' ';
+        Style s=Style::normal;
+        //change from terminal coordinates to file coordinates
+        y+=y_offset;
+        x+=x_offset;
+        if(y<lines.size() && x<lines[y].size()){
+          c=lines[y][x];
+          int max_file_x_in_window = x_offset + terminal.max_x() -1;
+          if(x == max_file_x_in_window && x+1 < lines[y].size()){
+            s=Style::inline_info;
+            c='>';
+          }
+        }
+        return {c, s};
+      });
     }
     terminal.deactivate_status(); // only display for one iteration
 
