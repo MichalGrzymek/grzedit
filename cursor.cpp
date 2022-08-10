@@ -4,7 +4,8 @@
 
 Cursor::Cursor(int _y, int _x, Terminal &_terminal,
                std::vector<std::string> &_lines)
-    : terminal(_terminal), lines(_lines), y(_y), x(_x) {}
+    : terminal(_terminal), lines(_lines), y(_y), x(_x),
+      selection_anchor(std::nullopt) {}
 
 void Cursor::set_x(int new_x) {
   if (lines[y].size() < new_x)
@@ -52,10 +53,43 @@ void Cursor::move_up() {
   }
 };
 void Cursor::move_down() {
-  if (y < lines.size() - 1) {
-    set_x(std::min(x, (int)lines[y + 1].size()));
-    set_y(y + 1);
-  }
+  if (y + 1 < lines.size())
+    move_to_row(y + 1);
 };
+
 void Cursor::move_maxright() { set_x(lines[y].size()); };
 void Cursor::move_maxleft() { set_x(0); };
+
+void Cursor::move_to_row(int row) {
+  if (row < 0 || row >= lines.size())
+    throw std::runtime_error("incorrect row number!");
+  set_x(std::min(x, (int)lines[row].size()));
+  set_y(row);
+}
+
+void Cursor::toggle_selection() {
+  if (selection_anchor.has_value())
+    selection_anchor.reset();
+  else
+    selection_anchor = y;
+}
+
+void Cursor::disable_selection() { selection_anchor.reset(); }
+
+bool Cursor::in_selection(int row) {
+  if (!selection_anchor.has_value())
+    return false;
+  return (selection_anchor.value() <= row && row <= this->y) ||
+         (this->y <= row && row <= selection_anchor.value());
+}
+
+bool Cursor::selection_active() { return selection_anchor.has_value(); }
+
+std::pair<int, int> Cursor::get_selection() {
+  if (!selection_anchor.has_value())
+    throw std::logic_error("selection not active!");
+  if (selection_anchor.value() <= y)
+    return {selection_anchor.value(), y};
+  else
+    return {y, selection_anchor.value()};
+}

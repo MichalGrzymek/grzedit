@@ -20,9 +20,9 @@ void Terminal::move_cursor_x(int x) { move_cursor(cursor_y(), x); }
 void Terminal::move_cursor_y(int y) { move_cursor(y, cursor_x()); }
 
 void Terminal::write(int y, int x, char c, Style s) {
-  wattron(text_window, COLOR_PAIR(to_int(s)));
+  wattron(text_window, COLOR_PAIR(to_underlying(s)));
   mvwaddch(text_window, y, x, c);
-  wattroff(text_window, COLOR_PAIR(to_int(s)));
+  wattroff(text_window, COLOR_PAIR(to_underlying(s)));
 }
 
 std::pair<int, int> Terminal::cursor_yx() {
@@ -88,7 +88,8 @@ Terminal::Terminal() {
 
   // ncurses options
   start_color();
-  init_pair(to_int(Style::inline_info), COLOR_WHITE, COLOR_YELLOW);
+  init_pair(to_underlying(Style::inline_info), COLOR_WHITE, COLOR_YELLOW);
+  init_pair(to_underlying(Style::selection), COLOR_WHITE, COLOR_BLUE);
 
   int nrows, ncolumns;
   getmaxyx(stdscr, nrows, ncolumns);
@@ -104,7 +105,7 @@ Terminal::Terminal() {
   display_status("Welcome to grzedit v1.0");
 
   info_window = newwin(info_rows, ncolumns, nrows - info_rows, 0);
-  waddstr(info_window, "^X exit \n^O write");
+  waddstr(info_window, "^X exit  ^V select \n^O write ^K cut ^U paste");
   wrefresh(info_window);
 }
 

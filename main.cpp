@@ -8,7 +8,8 @@
 #include <signal.h>
 #include <string>
 
-std::vector<std::string> lines;
+using Lines = std::vector<std::string>;
+Lines lines;
 std::string filename;
 
 void handle_cmd_args(int argc, char *argv[]) {
@@ -34,6 +35,7 @@ int main(int argc, char *argv[]) {
 
   Terminal terminal;
   Cursor cursor(0, 0, terminal, lines);
+  Lines copy_buffer;
   while (true) {
     {
       // offset in file at which the left upper corner of the terminal is
@@ -45,7 +47,7 @@ int main(int argc, char *argv[]) {
             " x_offset=" + std::to_string(x_offset));
       terminal.display([&](int y, int x) -> Terminal::Field {
         char c = ' ';
-        Style s = Style::normal;
+        Style s = cursor.in_selection(y) ? Style::selection : Style::normal;
         // change from terminal coordinates to file coordinates
         y += y_offset;
         x += x_offset;
@@ -97,7 +99,7 @@ int main(int argc, char *argv[]) {
       cursor.move_maxleft();
       cursor.move_down();
     } break;
-    case ctrl_plus('o'): {
+    case ctrl_plus('o'): { // save
       std::ofstream file(filename);
       if (!file.is_open())
         throw std::runtime_error("couldn't open file for writing!");
@@ -120,9 +122,40 @@ int main(int argc, char *argv[]) {
     case ctrl_plus('n'):
       cursor.move_down();
       break;
+    case ctrl_plus('v'):
+      cursor.toggle_selection();
+      break;
+    case ctrl_plus('k'): { // cut
+      int begin_delete, end_delete;
+
+      if (cursor.selection_active())
+        std::tie(begin_delete, end_delete) = cursor.get_selection();
+      else
+        begin_delete = end_delete = cursor.get_y();
+
+      copy_buffer.clear();
+      copy_buffer.insert(copy_buffer.begin(), lines.begin() + begin_delete,
+                         lines.begin() + end_delete + 1);
+
+      lines.erase(lines.begin() + begin_delete,
+                  lines.begin() + end_delete +
+                      1); // might put cursor in a bad state
+
+      if (lines.empty())
+        lines = {""};
+
+      cursor.move_to_row(std::min(static_cast<int>(lines.size()) - 1,
+                                  begin_delete)); // fix cursor
+      cursor.disable_selection();
+    } break;
+    case ctrl_plus('u'): // paste
+      lines.insert(lines.begin() + cursor.get_y() + 1, copy_buffer.begin(),
+                   copy_buffer.end());
+      cursor.move_down();
+      break;
     default:
       lines[cursor.get_y()].insert(
-          lines[cursor.get_y()].begin() + cursor.get_x(), (char)c);
+          lines[cursor.get_y()].begin() + cursor.get_x(), c);
       cursor.move_right();
     }
   }

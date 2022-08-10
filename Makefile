@@ -1,7 +1,7 @@
 TARGET = grzed
 LDLIBS = -lncurses
 CXX = g++
-CXXFLAGS = -g -std=c++17 -Werror -Wall -Wextra -Wshadow -pedantic -Wno-sign-compare -fsanitize=address -fsanitize=undefined
+CXXFLAGS = -g -std=c++17 -Werror -Wall -Wextra -Wshadow -Wno-sign-compare -pedantic -fsanitize=address -fsanitize=undefined
 RM = rm -f
 FORMAT = clang-format -i 
 
