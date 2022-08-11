@@ -1,5 +1,6 @@
 #ifndef CURSOR_HPP
 #define CURSOR_HPP
+#include "buffer.hpp"
 #include "terminal.hpp"
 
 #include <optional>
@@ -12,14 +13,14 @@ moving it together with the terminal cursor
 class Cursor {
 private:
   Terminal &terminal;
-  std::vector<std::string> &lines;
+  Buffer &buffer;
   int y, x;
   std::optional<int> selection_anchor;
   void set_x(int new_x);
   void set_y(int new_y);
 
 public:
-  Cursor(int _y, int _x, Terminal &_terminal, std::vector<std::string> &_lines);
+  Cursor(int _y, int _x, Terminal &_terminal, Buffer &_buffer);
   int get_x();
   int get_y();
 

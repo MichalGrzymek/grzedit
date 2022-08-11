@@ -7,9 +7,8 @@ FORMAT = clang-format -i
 
 .PHONY: clean distclean format
 
-HEADERS = $(wildcard *.hpp)
-OBJECTS = $(patsubst %.cpp, %.o, $(wildcard *.cpp))
-
+HEADERS = $(wildcard src/*.hpp)
+OBJECTS = $(patsubst %.cpp, %.o, $(wildcard src/*.cpp))
 
 all: $(TARGET)
 
@@ -20,10 +19,10 @@ $(TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(LDLIBS) -o $@ $(CXXFLAGS)
 
 format:
-	$(FORMAT) *.cpp *.hpp
+	$(FORMAT) $(HEADERS) $(wildcard src/*.cpp)
 
 clean:
-	$(RM) *.o
+	$(RM) $(wildcard src/*.o)
 
 distclean: clean
 	$(RM) $(TARGET)

@@ -1,41 +1,35 @@
-#include "cursor.hpp"
-#include "terminal.hpp"
+#include "editor.hpp"
 
-#include <algorithm>
-#include <cassert>
-#include <fstream>
-#include <iostream>
-#include <signal.h>
-#include <string>
+Buffer Editor::read_file() {
+  Buffer buf;
+  std::ifstream file(filename);
+  if (file.is_open()) {
+    std::string line;
+    while (std::getline(file, line))
+      buf.push_back(Line(line.begin(), line.end()));
+  } else
+    buf = {{}};
+  return buf;
+}
 
-using Lines = std::vector<std::string>;
-Lines lines;
-std::string filename;
-
-void handle_cmd_args(int argc, char *argv[]) {
-  if (argc == 2) {
-    filename = argv[1];
-
-    std::ifstream file(filename);
-    if (file.is_open()) {
-      std::string line;
-
-      while (std::getline(file, line))
-        lines.push_back(line);
-    } else
-      lines = {""};
-  } else {
-    std::cerr << "use: ./grzed filename" << std::endl;
-    exit(1);
+void Editor::write_file() {
+  std::ofstream file(filename);
+  if (!file.is_open())
+    throw std::runtime_error("couldn't open file for writing!");
+  for (Line line : buffer) {
+    for (Character character : line)
+      file << character;
+    file << '\n';
   }
 }
 
-int main(int argc, char *argv[]) {
-  handle_cmd_args(argc, argv);
+Editor::Editor(std::string _filename, Terminal &_terminal)
+    : filename(_filename), buffer(read_file()), terminal(_terminal),
+      cursor(0, 0, _terminal, this->buffer) {
+  // buffer=read_file(filename);
+}
 
-  Terminal terminal;
-  Cursor cursor(0, 0, terminal, lines);
-  Lines copy_buffer;
+int Editor::main_loop() {
   while (true) {
     {
       // offset in file at which the left upper corner of the terminal is
@@ -47,14 +41,14 @@ int main(int argc, char *argv[]) {
             " x_offset=" + std::to_string(x_offset));
       terminal.display([&](int y, int x) -> Terminal::Field {
         char c = ' ';
-        Style s = cursor.in_selection(y) ? Style::selection : Style::normal;
         // change from terminal coordinates to file coordinates
         y += y_offset;
         x += x_offset;
-        if (y < lines.size() && x < lines[y].size()) {
-          c = lines[y][x];
+        Style s = cursor.in_selection(y) ? Style::selection : Style::normal;
+        if (y < buffer.size() && x < buffer[y].size()) {
+          c = buffer[y][x];
           int max_file_x_in_window = x_offset + terminal.max_x() - 1;
-          if (x == max_file_x_in_window && x + 1 < lines[y].size()) {
+          if (x == max_file_x_in_window && x + 1 < buffer[y].size()) {
             s = Style::inline_info;
             c = '>';
           }
@@ -66,17 +60,19 @@ int main(int argc, char *argv[]) {
 
     int c = terminal.get_char();
     switch (c) {
-    case KEY_BACKSPACE:
+    case KEY_BACKSPACE: {
+      Line &current_line = buffer[cursor.get_y()];
       if (cursor.get_x() > 0) {
-        lines[cursor.get_y()].erase(cursor.get_x() - 1, 1);
+        current_line.erase(current_line.begin() + cursor.get_x() - 1);
         cursor.move_left();
       } else if (cursor.get_y() != 0) {
         cursor.move_up();
         cursor.move_maxright();
-        lines[cursor.get_y()] += lines[cursor.get_y() + 1];
-        lines.erase(lines.begin() + cursor.get_y() + 1);
+        for (Character character : buffer[cursor.get_y() + 1])
+          buffer[cursor.get_y()].push_back(character);
+        buffer.erase(buffer.begin() + cursor.get_y() + 1);
       }
-      break;
+    } break;
     case KEY_UP:
       cursor.move_up();
       break;
@@ -90,21 +86,17 @@ int main(int argc, char *argv[]) {
       cursor.move_right();
       break;
     case '\n': {
-      std::string new_line(lines[cursor.get_y()].begin() + cursor.get_x(),
-                           lines[cursor.get_y()].end());
-      lines[cursor.get_y()].erase(lines[cursor.get_y()].begin() +
-                                      cursor.get_x(),
-                                  lines[cursor.get_y()].end());
-      lines.insert(lines.begin() + cursor.get_y() + 1, new_line);
+      Line new_line(buffer[cursor.get_y()].begin() + cursor.get_x(),
+                    buffer[cursor.get_y()].end());
+      buffer[cursor.get_y()].erase(buffer[cursor.get_y()].begin() +
+                                       cursor.get_x(),
+                                   buffer[cursor.get_y()].end());
+      buffer.insert(buffer.begin() + cursor.get_y() + 1, new_line);
       cursor.move_maxleft();
       cursor.move_down();
     } break;
     case ctrl_plus('o'): { // save
-      std::ofstream file(filename);
-      if (!file.is_open())
-        throw std::runtime_error("couldn't open file for writing!");
-      for (std::string line : lines)
-        file << line << '\n';
+      write_file();
       terminal.display_status("Saved!");
     } break;
     case ctrl_plus('x'):
@@ -134,28 +126,28 @@ int main(int argc, char *argv[]) {
         begin_delete = end_delete = cursor.get_y();
 
       copy_buffer.clear();
-      copy_buffer.insert(copy_buffer.begin(), lines.begin() + begin_delete,
-                         lines.begin() + end_delete + 1);
+      copy_buffer.insert(copy_buffer.begin(), buffer.begin() + begin_delete,
+                         buffer.begin() + end_delete + 1);
 
-      lines.erase(lines.begin() + begin_delete,
-                  lines.begin() + end_delete +
-                      1); // might put cursor in a bad state
+      buffer.erase(buffer.begin() + begin_delete,
+                   buffer.begin() + end_delete +
+                       1); // might put cursor in a bad state
 
-      if (lines.empty())
-        lines = {""};
+      if (buffer.empty())
+        buffer = {{}};
 
-      cursor.move_to_row(std::min(static_cast<int>(lines.size()) - 1,
+      cursor.move_to_row(std::min(static_cast<int>(buffer.size()) - 1,
                                   begin_delete)); // fix cursor
       cursor.disable_selection();
     } break;
     case ctrl_plus('u'): // paste
-      lines.insert(lines.begin() + cursor.get_y() + 1, copy_buffer.begin(),
-                   copy_buffer.end());
+      buffer.insert(buffer.begin() + cursor.get_y() + 1, copy_buffer.begin(),
+                    copy_buffer.end());
       cursor.move_down();
       break;
     default:
-      lines[cursor.get_y()].insert(
-          lines[cursor.get_y()].begin() + cursor.get_x(), c);
+      buffer[cursor.get_y()].insert(
+          buffer[cursor.get_y()].begin() + cursor.get_x(), c);
       cursor.move_right();
     }
   }
