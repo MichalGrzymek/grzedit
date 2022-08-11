@@ -23,6 +23,8 @@ private:
   Buffer read_file();
   void write_file();
 
+  std::pair<int,int> get_yx_offset();
+  void refresh_screen();
 public:
   Editor(std::string _filename, Terminal &_terminal);
 

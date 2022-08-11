@@ -29,16 +29,20 @@ Editor::Editor(std::string _filename, Terminal &_terminal)
   // buffer=read_file(filename);
 }
 
-int Editor::main_loop() {
-  while (true) {
+std::pair<int,int> Editor::get_yx_offset(){
+    const int y_offset = cursor.get_y() - terminal.cursor_y(),
+              x_offset = cursor.get_x() - terminal.cursor_x();
+    if (y_offset < 0 || x_offset < 0)
+      throw std::logic_error(
+          "negative offset y_offset=" + std::to_string(y_offset) +
+          " x_offset=" + std::to_string(x_offset));
+    return {y_offset, x_offset};
+}
+
+void Editor::refresh_screen(){
     {
       // offset in file at which the left upper corner of the terminal is
-      const int y_offset = cursor.get_y() - terminal.cursor_y(),
-                x_offset = cursor.get_x() - terminal.cursor_x();
-      if (y_offset < 0 || x_offset < 0)
-        throw std::logic_error(
-            "negative offset y_offset=" + std::to_string(y_offset) +
-            " x_offset=" + std::to_string(x_offset));
+      auto[y_offset, x_offset]=get_yx_offset();
       terminal.display([&](int y, int x) -> Terminal::Field {
         char c = ' ';
         // change from terminal coordinates to file coordinates
@@ -56,6 +60,11 @@ int Editor::main_loop() {
         return {c, s};
       });
     }
+}
+
+int Editor::main_loop() {
+  while (true) {
+    refresh_screen();
     terminal.deactivate_status(); // only display for one iteration
 
     int c = terminal.get_char();
